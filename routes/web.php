@@ -1,6 +1,10 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\CustomerController;
+use App\Http\Controllers\ProductController;
+use App\Http\Controllers\PurchaseInvoiceController;
+use App\Http\Controllers\SupplierController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -29,4 +33,9 @@ Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])
         ->name('logout');
 
+
+    Route::resource('customers', CustomerController::class);
+    Route::resource('suppliers', SupplierController::class);
+    Route::resource('products', ProductController::class);
+    Route::resource('purchase-invoices', PurchaseInvoiceController::class);
 });

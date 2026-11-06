@@ -3,63 +3,73 @@
 namespace App\Http\Controllers;
 
 use App\Models\Supplier;
+use App\Http\Requests\StoreSupplierRequest;
+use App\Http\Requests\UpdateSupplierRequest;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\View\View;
 use Illuminate\Http\Request;
 
 class SupplierController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
+    public function index(Request $request): View
     {
-        //
+        $suppliers = Supplier::query()
+            ->when($request->search, function ($query, $search) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                        ->orWhere('email', 'like', "%{$search}%")
+                        ->orWhere('phone', 'like', "%{$search}%");
+                });
+            })
+            ->latest()
+            ->paginate(10)
+            ->withQueryString();
+
+        return view('suppliers.index', compact('suppliers'));
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
+    public function create(): View
     {
-        //
+        return view('suppliers.create');
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
+    public function store(StoreSupplierRequest $request): RedirectResponse
     {
-        //
+        Supplier::create($request->validated());
+
+        return redirect()
+            ->route('suppliers.index')
+            ->with('success', 'Supplier created successfully.');
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(Supplier $supplier)
+    public function show(Supplier $supplier): View
     {
-        //
+        return view('suppliers.show', compact('supplier'));
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(Supplier $supplier)
+    public function edit(Supplier $supplier): View
     {
-        //
+        return view('suppliers.edit', compact('supplier'));
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, Supplier $supplier)
-    {
-        //
+    public function update(
+        UpdateSupplierRequest $request,
+        Supplier $supplier
+    ): RedirectResponse {
+
+        $supplier->update($request->validated());
+
+        return redirect()
+            ->route('suppliers.index')
+            ->with('success', 'Supplier updated successfully.');
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(Supplier $supplier)
+    public function destroy(Supplier $supplier): RedirectResponse
     {
-        //
+        $supplier->delete();
+
+        return redirect()
+            ->route('suppliers.index')
+            ->with('success', 'Supplier deleted successfully.');
     }
 }
