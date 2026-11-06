@@ -5,18 +5,21 @@ namespace App\Http\Controllers;
 use App\Models\PurchaseInvoice;
 use App\Models\Supplier;
 use App\Models\Product;
-use App\Models\InvoiceItem;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 use App\Http\Requests\StorePurchaseInvoiceRequest;
 use App\Http\Requests\UpdatePurchaseInvoiceRequest;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
+use Illuminate\View\View;
 
 class PurchaseInvoiceController extends Controller
 {
-    public function index()
+    public function index(Request $request): View
     {
         $invoices = PurchaseInvoice::with('supplier')
-            ->when(request('search'), function ($query, $search) {
+            ->when($request->search, function ($query, $search) {
                 $query->where('invoice_no', 'like', "%{$search}%")
                     ->orWhere('bill_no', 'like', "%{$search}%")
                     ->orWhereHas('supplier', function ($q) use ($search) {
@@ -30,23 +33,19 @@ class PurchaseInvoiceController extends Controller
         return view('purchase-invoices.index', compact('invoices'));
     }
 
-    public function create()
+    public function create(): View
     {
         $suppliers = Supplier::orderBy('name')->get();
         $products = Product::orderBy('name')->get();
 
-        return view('purchase-invoices.create', compact(
-            'suppliers',
-            'products'
-        ));
+        return view('purchase-invoices.create', compact('suppliers', 'products'));
     }
 
-    public function store(StorePurchaseInvoiceRequest $request)
+    public function store(StorePurchaseInvoiceRequest $request): RedirectResponse
     {
         $data = $request->validated();
 
         DB::transaction(function () use ($data) {
-
             $invoice = PurchaseInvoice::create([
                 'invoice_no' => 'PUR-' . strtoupper(Str::random(8)),
                 'supplier_id' => $data['supplier_id'],
@@ -69,16 +68,14 @@ class PurchaseInvoiceController extends Controller
             ->with('success', 'Purchase invoice created successfully.');
     }
 
-    public function show(PurchaseInvoice $purchaseInvoice)
+    public function show(PurchaseInvoice $purchaseInvoice): View
     {
         $purchaseInvoice->load(['supplier', 'items.product', 'payments']);
 
-        return view('purchase-invoices.show', [
-            'invoice' => $purchaseInvoice
-        ]);
+        return view('purchase-invoices.show', compact('purchaseInvoice'));
     }
 
-    public function edit(PurchaseInvoice $purchaseInvoice)
+    public function edit(PurchaseInvoice $purchaseInvoice): View
     {
         $purchaseInvoice->load('items');
 
@@ -95,11 +92,10 @@ class PurchaseInvoiceController extends Controller
     public function update(
         UpdatePurchaseInvoiceRequest $request,
         PurchaseInvoice $purchaseInvoice
-    ) {
+    ): RedirectResponse {
         $data = $request->validated();
 
         DB::transaction(function () use ($data, $purchaseInvoice) {
-
             $purchaseInvoice->update([
                 'supplier_id' => $data['supplier_id'],
                 'bill_no' => $data['bill_no'] ?? null,
@@ -108,7 +104,6 @@ class PurchaseInvoiceController extends Controller
                 'notes' => $data['notes'] ?? null,
             ]);
 
-            // Replace old invoice items.
             $purchaseInvoice->items()->delete();
 
             $this->saveItems($purchaseInvoice, $data['items']);
@@ -119,7 +114,7 @@ class PurchaseInvoiceController extends Controller
             ->with('success', 'Purchase invoice updated successfully.');
     }
 
-    public function destroy(PurchaseInvoice $purchaseInvoice)
+    public function destroy(PurchaseInvoice $purchaseInvoice): RedirectResponse
     {
         if ($purchaseInvoice->paid_amount > 0) {
             return back()->with(
@@ -138,14 +133,13 @@ class PurchaseInvoiceController extends Controller
             ->with('success', 'Purchase invoice deleted successfully.');
     }
 
-    private function saveItems($invoice, array $items): void
+    private function saveItems(PurchaseInvoice $invoice, array $items): void
     {
         $subtotal = 0;
         $discountTotal = 0;
         $taxTotal = 0;
 
         foreach ($items as $item) {
-
             $product = Product::findOrFail($item['product_id']);
 
             $quantity = (float) $item['quantity'];
@@ -156,9 +150,9 @@ class PurchaseInvoiceController extends Controller
             $gross = $quantity * $unitPrice;
 
             if ($discount > $gross) {
-                throw new \InvalidArgumentException(
-                    'Item discount cannot exceed item amount.'
-                );
+                throw ValidationException::withMessages([
+                    'items' => 'Item discount cannot exceed gross amount.',
+                ]);
             }
 
             $taxableAmount = $gross - $discount;
@@ -185,10 +179,7 @@ class PurchaseInvoiceController extends Controller
             'subtotal' => round($subtotal, 2),
             'discount' => round($discountTotal, 2),
             'tax_total' => round($taxTotal, 2),
-            'grand_total' => round(
-                $subtotal - $discountTotal + $taxTotal,
-                2
-            ),
+            'grand_total' => round($subtotal - $discountTotal + $taxTotal, 2),
         ]);
     }
 }

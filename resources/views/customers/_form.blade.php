@@ -31,8 +31,5 @@
     <textarea name="address" class="form-control" rows="3">{{ old('address', $customer->address ?? '') }}</textarea>
 </div>
 
-<button class="btn btn-primary">Save Customer</button>
-
-<a href="{{ route('customers.index') }}" class="btn btn-secondary">
-    Cancel
-</a>
+<button type="submit" class="btn btn-primary">Save Customer</button>
+<a href="{{ route('customers.index') }}" class="btn btn-secondary">Cancel</a>

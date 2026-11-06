@@ -27,5 +27,5 @@
     <textarea name="address" class="form-control" rows="3">{{ old('address', $supplier->address ?? '') }}</textarea>
 </div>
 
-<button class="btn btn-primary">Save Supplier</button>
+<button type="submit" class="btn btn-primary">Save Supplier</button>
 <a href="{{ route('suppliers.index') }}" class="btn btn-secondary">Cancel</a>

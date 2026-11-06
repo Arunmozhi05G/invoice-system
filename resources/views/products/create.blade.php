@@ -4,7 +4,7 @@
 
 @section('content')
 
-<h3 class="mb-3">Create Product / Service</h3>
+<h3 class="mb-3">Create Product</h3>
 
 <div class="card shadow-sm">
     <div class="card-body">

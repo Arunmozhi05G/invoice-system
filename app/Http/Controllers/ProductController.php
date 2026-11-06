@@ -7,13 +7,20 @@ use App\Enums\ProductType;
 use App\Http\Requests\StoreProductRequest;
 use App\Http\Requests\UpdateProductRequest;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class ProductController extends Controller
 {
-    public function index(): View
+    public function index(Request $request): View
     {
-        $products = Product::latest()->paginate(10);
+        $products = Product::query()
+            ->when($request->search, function ($query, $search) {
+                $query->where('name', 'like', "%{$search}%");
+            })
+            ->latest()
+            ->paginate(10)
+            ->withQueryString();
 
         return view('products.index', compact('products'));
     }
@@ -50,7 +57,6 @@ class ProductController extends Controller
         UpdateProductRequest $request,
         Product $product
     ): RedirectResponse {
-
         $product->update($request->validated());
 
         return redirect()

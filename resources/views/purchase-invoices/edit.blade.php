@@ -1,14 +1,20 @@
 @extends('layouts.app')
 
-@section('content')
-<div class="container py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h3>Edit Purchase Invoice</h3>
-        <a href="{{ route('purchase-invoices.index') }}" class="btn btn-secondary">
-            Back
-        </a>
-    </div>
+@section('title', 'Edit Purchase Invoice')
 
-    @include('purchase-invoices._form', ['invoice' => $purchaseInvoice])
+@section('content')
+
+<h3 class="mb-3">Edit Purchase Invoice</h3>
+
+<div class="card shadow-sm">
+    <div class="card-body">
+        <form method="POST" action="{{ route('purchase-invoices.update', $purchaseInvoice) }}">
+            @csrf
+            @method('PUT')
+
+            @include('purchase-invoices._form', ['invoice' => $purchaseInvoice])
+        </form>
+    </div>
 </div>
+
 @endsection

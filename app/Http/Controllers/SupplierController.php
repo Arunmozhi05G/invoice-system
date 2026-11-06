@@ -6,8 +6,8 @@ use App\Models\Supplier;
 use App\Http\Requests\StoreSupplierRequest;
 use App\Http\Requests\UpdateSupplierRequest;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\View\View;
 use Illuminate\Http\Request;
+use Illuminate\View\View;
 
 class SupplierController extends Controller
 {
@@ -56,7 +56,6 @@ class SupplierController extends Controller
         UpdateSupplierRequest $request,
         Supplier $supplier
     ): RedirectResponse {
-
         $supplier->update($request->validated());
 
         return redirect()
